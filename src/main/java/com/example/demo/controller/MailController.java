@@ -18,7 +18,7 @@ public class MailController {
     @Autowired
     private MailService mailService;
 
-    @PostMapping("/mail")
+    @PostMapping("/sendmail")
     public ResponseEntity<Void> sendMail(@Valid @RequestBody SendMailRequest request) {
         mailService.sendMail(request);
         return ResponseEntity.noContent().build();
