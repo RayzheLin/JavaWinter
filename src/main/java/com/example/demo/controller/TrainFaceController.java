@@ -79,20 +79,7 @@ public class TrainFaceController {
         final TrainResult trainResult = engineUtil.trainFace(trainFace, logDeleteFlag);
         LOGGER.info("trainResult=" + new Gson().toJson(trainResult));
 
-//        List<String> faceDBList = new ArrayList<>();
-//        faceDBList.add(faceDBPath + "all.faceDB");
-//        faceDBList.add(faceDBPath + name + ".faceDB");
-//
-//        // Model Append
-//        final ModelAppend modelAppend = new ModelAppend();
-//        modelAppend.setTrainedFaceDBPath(faceDBPath + "all.faceDB");
-//        modelAppend.setFaceDBList(faceDBList);
-//        modelAppend.setListPath(modelAppendListPath.toString());
-//        modelAppend.setEnginePath(enginePath.toString());
-//        final ModelAppendResult modelAppendResult = engineUtil.modelAppend(modelAppend, false, 25000);
-//        LOGGER.info("modelInsertResult : " + new Gson().toJson(modelAppendResult));
-
-        modelAppend(name);
+//        modelAppend(name);
         modelInsert(name);
 
         return null;

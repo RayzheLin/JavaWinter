@@ -1,20 +1,24 @@
 package com.example.demo.controller;
 
 import com.example.demo.engine.contorl.EngineUtil;
+import com.example.demo.engine.entity.ModelAppend;
+import com.example.demo.engine.entity.ModelAppendResult;
 import com.example.demo.engine.util.CreateEngineFileUtil;
 import com.example.demo.engine.util.FolderUtil;
 import com.example.demo.engine.contorl.GetResultUtil;
 import com.example.demo.engine.entity.Face;
 import com.example.demo.engine.entity.RecognizeFace;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.ws.rs.core.Response;
-import java.io.File;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,8 +49,6 @@ public class RecognizeFaceController {
     final static StringBuilder modelInserFilePath = new StringBuilder(enginePath + "\\Singal_For_Model_Insert.txt");
     final static String resolution = "720p";
 
-    final static StringBuilder averyFaceDBPath = new StringBuilder(faceDBPath + "\\all");
-
     final static File outputfaceFile = new File(outputfacePath.toString());
     final static File faceDBFile = new File(faceDBPath.toString());
     final static File outputframeFile = new File(outputframepath.toString());
@@ -56,14 +58,21 @@ public class RecognizeFaceController {
 //    final static StringBuilder FaceImageFolderPath = new StringBuilder(resourcesPath + "jeff");
 //    final static File FaceImageFolder = new File(FaceImageFolderPath.toString());
 
+    final static String filepath = "C:\\eGroupAI_FaceEngine_CPU_V4.2.0-beta.20\\eGroup";
+
     @PostMapping("/Recognize")
-    public Response RecognizeFace(){
+    public Response RecognizeFace() throws IOException {
+
+//        modelAppend();
+        String time = modelAppend();
+        System.out.println(time);
 
         Thread recognitionThread = new Thread(new Runnable() {
+
             @Override
 
             public void run() {
-                recognition(averyFaceDBPath + ".faceDB");
+                recognition(faceDBPath + "date" + time +".faceDB");
 
             }
         });
@@ -71,24 +80,25 @@ public class RecognizeFaceController {
         ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(2);
         recognitionThread.start();
         List<Face> faceList = getResultUtil.cacheResult(jsonFolderPath.toString(), catchJsonName.toString());
-        scheduledThreadPool.scheduleAtFixedRate(new getName(faceList) , 5, 1, TimeUnit.SECONDS);
+        scheduledThreadPool.scheduleAtFixedRate(new getName(faceList), 5, 1, TimeUnit.SECONDS);
 
         return null;
     }
 
-    public static class getName implements Runnable{
+    public static class getName implements Runnable {
         private List<Face> faceList;
+
         public getName(List<Face> faceList) {
             this.faceList = faceList;
         }
 
         @Override
-        public void run(){
+        public void run() {
             faceList = getResultUtil.cacheResult(jsonFolderPath.toString(), catchJsonName.toString());
-            if(faceList == null){
+            if (faceList == null) {
                 System.out.println("null");
-            }else {
-                Face f = faceList.get(faceList.size()-1);
+            } else {
+                Face f = faceList.get(faceList.size() - 1);
                 System.out.println(f.getPersonId());
                 System.out.println(f.getSystemTime());
                 LocalDateTime myDateObj = LocalDateTime.now();
@@ -101,7 +111,7 @@ public class RecognizeFaceController {
 
     }
 
-    public static void recognition(String usedFaceDB){
+    public static void recognition(String usedFaceDB) {
         final RecognizeFace recognizeFace = new RecognizeFace();
         recognizeFace.setEnginePath(enginePath.toString());
         recognizeFace.setTrainedFaceDBPath(usedFaceDB);
@@ -120,4 +130,57 @@ public class RecognizeFaceController {
         // Start recognition
         engineUtil.recognizeFace(recognizeFace);
     }
+
+    public static String modelAppend() throws IOException {
+
+                File folder1 = new File(filepath);
+                String[] list1 = folder1.list();
+                List<String> faceDBList = new ArrayList<>();
+
+
+                for (int i = 0; i < list1.length; i++) {
+                    if (!list1[i].substring(0, 4).equals("date") && !list1[i].equals("AppendDate.txt") && !list1[i].equals("ModelAppend.egroupList")) {
+                        faceDBList.add(faceDBPath + list1[i]);
+                    }
+                }
+
+                LocalDateTime myDateObj = LocalDateTime.now();
+                DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm");
+                String formattedDate = myDateObj.format(myFormatObj);
+
+
+                FileWriter fw = new FileWriter(filepath + "\\AppendDate.txt");
+                fw.write(formattedDate);
+                fw.flush();
+                fw.close();
+
+
+
+                FileReader fr = new FileReader(filepath + "\\AppendDate.txt");
+                BufferedReader br = new BufferedReader(fr);
+
+                String line = br.readLine();
+                StringBuilder sb = new StringBuilder();
+
+                while (line != null) {
+                    sb.append(line);
+                    line = br.readLine();
+                }
+
+                String dateAsString = sb.toString();
+                fr.close();
+
+                // Model Append
+                final ModelAppend modelAppend = new ModelAppend();
+                modelAppend.setTrainedFaceDBPath(faceDBPath + "date" + dateAsString + ".faceDB");
+                modelAppend.setFaceDBList(faceDBList);
+                modelAppend.setListPath(modelAppendListPath.toString());
+                modelAppend.setEnginePath(enginePath.toString());
+                final ModelAppendResult modelAppendResult = engineUtil.modelAppend(modelAppend, false, 25000);
+                LOGGER.info("modelInsertResult : " + new Gson().toJson(modelAppendResult));
+
+                return dateAsString;
+            }
+
+
 }
