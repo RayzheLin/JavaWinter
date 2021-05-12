@@ -8,14 +8,20 @@ import com.example.demo.engine.util.FolderUtil;
 import com.example.demo.engine.contorl.GetResultUtil;
 import com.example.demo.engine.entity.Face;
 import com.example.demo.engine.entity.RecognizeFace;
+import com.example.demo.entity.userfacedata;
+import com.example.demo.service.UserfacedataService;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.ws.rs.core.Response;
 import java.io.*;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -25,7 +31,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @RestController
+@CrossOrigin
 public class RecognizeFaceController {
+
     private static Logger LOGGER = LoggerFactory.getLogger(TrainFaceController.class);
     final static FolderUtil folderUtil = new FolderUtil();
     final static EngineUtil engineUtil = new EngineUtil();
@@ -59,9 +67,15 @@ public class RecognizeFaceController {
 //    final static File FaceImageFolder = new File(FaceImageFolderPath.toString());
 
     final static String filepath = "C:\\eGroupAI_FaceEngine_CPU_V4.2.0-beta.20\\eGroup";
+    final static RecognizeFace recognizeFace = new RecognizeFace();
 
-    @PostMapping("/Recognize")
+    @Autowired
+    UserfacedataService userfacedataService;
+
+
+    @PostMapping("/Recognize/Open")
     public Response RecognizeFace() throws IOException {
+
 
 //        modelAppend();
         String time = modelAppend();
@@ -73,15 +87,22 @@ public class RecognizeFaceController {
 
             public void run() {
                 recognition(faceDBPath + "date" + time +".faceDB");
-
             }
         });
 
         ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(2);
         recognitionThread.start();
         List<Face> faceList = getResultUtil.cacheResult(jsonFolderPath.toString(), catchJsonName.toString());
-        scheduledThreadPool.scheduleAtFixedRate(new getName(faceList), 5, 1, TimeUnit.SECONDS);
+        scheduledThreadPool.scheduleAtFixedRate(new getName(faceList),5, 1, TimeUnit.SECONDS);
 
+        return null;
+    }
+
+    @PostMapping("/Recognize/Close")
+    public Response closeRecognize(){
+        System.out.println("before close");
+        engineUtil.stopRecognizeFace(recognizeFace, RecognizeFace.RECOGNIZEMODE_.LIVENESS);
+        System.out.println("after close");
         return null;
     }
 
@@ -91,6 +112,7 @@ public class RecognizeFaceController {
         public getName(List<Face> faceList) {
             this.faceList = faceList;
         }
+
 
         @Override
         public void run() {
@@ -104,21 +126,25 @@ public class RecognizeFaceController {
                 LocalDateTime myDateObj = LocalDateTime.now();
                 DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 String formattedDate = myDateObj.format(myFormatObj);
-                System.out.println("Time Now " + formattedDate);
-
+                System.out.println((getInOut(f.getPersonId())));
             }
         }
 
     }
 
+    public String getInOut(String id){
+        System.out.println(userfacedataService.getInOut(id));
+        return userfacedataService.getInOut(id);
+    }
+
     public static void recognition(String usedFaceDB) {
-        final RecognizeFace recognizeFace = new RecognizeFace();
+
         recognizeFace.setEnginePath(enginePath.toString());
         recognizeFace.setTrainedFaceDBPath(usedFaceDB);
         recognizeFace.setOutputFacePath(outputfacePath.toString());
         recognizeFace.setOutputFramePath(outputframepath.toString());
         recognizeFace.setJsonPath(jsonFolderPath + "\\output");
-        recognizeFace.setHideMainWindow(true);
+        recognizeFace.setHideMainWindow(false);
         recognizeFace.setOutputFrame(false);
         recognizeFace.setOutputFace(false);
         recognizeFace.setOnface(true);

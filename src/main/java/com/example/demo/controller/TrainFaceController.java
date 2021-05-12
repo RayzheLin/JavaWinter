@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.swing.*;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -21,6 +23,7 @@ import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,8 +63,13 @@ public class TrainFaceController {
 //    final static StringBuilder FaceImageFolderPath = new StringBuilder(resourcesPath + "jeff");
 //    final static File FaceImageFolder = new File(FaceImageFolderPath.toString());
 
-    @PostMapping("/Train/{name}")
-    public Response TrainPhoto(@PathVariable String name) {
+    @GetMapping("/Train/{name}")
+    @CrossOrigin
+    public Response TrainPhoto(@PathVariable String name, HttpServletResponse response) throws IOException {
+
+
+
+
         final List<TrainFace> trainFaceList = new ArrayList<>();
         // Set training variable
         final TrainFace trainFace = new TrainFace();
@@ -81,6 +89,10 @@ public class TrainFaceController {
 
 //        modelAppend(name);
         modelInsert(name);
+        response.setContentType("text/html;charset=utf-8");
+        PrintWriter out = response.getWriter();
+        out.print("123");
+
 
         return null;
     }
@@ -120,6 +132,9 @@ public class TrainFaceController {
         LOGGER.info("modelInsertResult : " + new Gson().toJson(modelAppendResult));
 
     }
+
+
+
 
 
 }
